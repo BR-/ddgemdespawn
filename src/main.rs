@@ -76,20 +76,20 @@ fn main() {
 					let curr_gems_lost = data.gems_despawned + data.gems_eaten;
 					let last_gems_lost = last.gems_despawned + last.gems_eaten;
 					if restart_eligible && data.status() == GameStatus::Playing && last.status() == GameStatus::Playing && data.time < 2. && last.time > 5. {
-						log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", last.time, last_gems_lost, regushes(&data), shotgun_average));
+						log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
 					}
 					restart_eligible = data.status() == GameStatus::Playing && data.time > 3.;
 					if data.status() == GameStatus::Playing && last.status() != GameStatus::Playing {
-						log(&mut logfile, "Game started");
+						log(&mut logfile, format!("Game started (at {:.0})", data.starting_time));
 					}
 					if data.status() != GameStatus::Playing && last.status() == GameStatus::Playing {
-						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", last.time, last_gems_lost, regushes(&data), shotgun_average));
+						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
 					}
 					if data.status() == GameStatus::Playing && curr_gems_lost > last_gems_lost {
-						log(&mut logfile, format!("Gem lost at {:.4}", data.time));
+						log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
 						sl.play(&wav);
 					}
-					if data.time > 80. && last.time <= 80. {
+					if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
 						sl.play(&wav2);
 						// play audio clip "start clearing arena"
 						// etc do the rest of the important times too
