@@ -1,10 +1,12 @@
 #![allow(dead_code)] // unused constants
 
 use ddcore_rs::memory::{GameConnection, ConnectionParams, OperatingSystem, MemoryOverride};
-use ddcore_rs::models::{GameStatus, StatsDataBlock};
+use ddcore_rs::models::{GameStatus, StatsDataBlock, replay::{DdRpl, EntityType, ReplayEvent::EnemyHitWeakSpot}};
 use soloud::*;
 use std::fs::{File, OpenOptions};
-use std::io::Write;
+#[allow(unused_imports)]
+use std::io::{Cursor, Write};
+use std::collections::BTreeMap;
 
 const SKULL_I: usize = 0;
 const SKULL_II: usize = 1;
@@ -68,15 +70,17 @@ fn main() {
 		let mut shotgun_count = 0;
 		let mut shotgun_average = 0.;
 		loop {
-			if let Err(_) = connection.is_alive_res() {
+			if !connection.is_alive() {
 				break;
 			}
-			if let Ok(data) = connection.read_stats_block() {
+			if let Ok(data_frames) = connection.read_stats_block_with_frames() {
+				let data = data_frames.block;
 				if let Some(last) = last_data {
 					let curr_gems_lost = data.gems_despawned + data.gems_eaten;
 					let last_gems_lost = last.gems_despawned + last.gems_eaten;
 					if restart_eligible && data.status() == GameStatus::Playing && last.status() == GameStatus::Playing && data.time < 2. && last.time > 5. {
 						log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
+						giga_info(&mut connection);
 					}
 					restart_eligible = data.status() == GameStatus::Playing && data.time > 3.;
 					if data.status() == GameStatus::Playing && last.status() != GameStatus::Playing {
@@ -84,6 +88,7 @@ fn main() {
 					}
 					if data.status() != GameStatus::Playing && last.status() == GameStatus::Playing {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
+						giga_info(&mut connection);
 					}
 					if data.status() == GameStatus::Playing && curr_gems_lost > last_gems_lost {
 						log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
@@ -141,8 +146,58 @@ fn regushes(data: &StatsDataBlock) -> i16 {
 	(sk2 + sk3 + sk4) - (sq1 + sq2 + sq3)
 }
 
+#[allow(unused_variables)]
 fn log<S: Into<String>>(file: &mut File, x: S) {
 	let x: String = x.into();
 	println!("{}", x);
 	//writeln!(file, "{}", x).unwrap();
+}
+
+fn giga_info(connection: &mut GameConnection) {
+	let mut gigas: BTreeMap<i32, [i8; 50]> = BTreeMap::new();
+	if let Ok(replay_bin) = connection.replay_bin() {
+		if let Ok(mut replay) = DdRpl::from_reader(&mut Cursor::new(replay_bin)) {
+			if let Ok(_) = replay.calc_data() {
+				if let Some(data) = replay.data {
+					gigas = data.entities.iter().filter_map(|p|
+						match p.entity_type {
+							EntityType::Gigapede => Some((p.id, [5; 50])),
+							_ => None,
+						}
+					).collect();
+					for frame in data.frames {
+						for event in frame.events {
+							match event {
+								EnemyHitWeakSpot(hit) => {
+									if let Some(giga) = gigas.get_mut(&hit.enemy_id) {
+										giga[hit.segment as usize] -= 1;
+									}
+								}
+								_ => (),
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	let mut any_alive = false;
+	for g in gigas.values() {
+		let mut alive = false;
+		for &h in g {
+			if h > 0 {
+				alive = true;
+				any_alive = true;
+			}
+		}
+		if alive {
+			for h in g {
+				print!("{}", h);
+			}
+			println!();
+		}
+	}
+	if any_alive {
+		println!();
+	}
 }
