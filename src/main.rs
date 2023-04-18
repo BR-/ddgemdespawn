@@ -83,14 +83,14 @@ fn main() {
 						giga_info(&mut connection);
 					}
 					restart_eligible = data.status() == GameStatus::Playing && data.time > 3.;
-					if data.status() == GameStatus::Playing && last.status() != GameStatus::Playing {
+					if (data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game started (at {:.0})", data.starting_time));
 					}
-					if data.status() != GameStatus::Playing && last.status() == GameStatus::Playing {
+					if (last.status() == GameStatus::Playing || last.status() == GameStatus::OwnReplayFromLastRun || last.status() == GameStatus::OwnReplayFromLeaderboard || last.status() == GameStatus::OtherReplay || last.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
 						giga_info(&mut connection);
 					}
-					if data.status() == GameStatus::Playing && curr_gems_lost > last_gems_lost {
+					if curr_gems_lost > last_gems_lost {
 						log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
 						sl.play(&wav);
 					}
