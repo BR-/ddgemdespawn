@@ -64,7 +64,6 @@ fn main() {
 		std::thread::sleep(std::time::Duration::from_millis(3000));
 		log(&mut logfile, "Connected to game");
 		let mut last_data: Option<StatsDataBlock> = None;
-		let mut restart_eligible = false;
 		let mut last_shotgun_time = 0.;
 		let mut shotgun_sum = 0;
 		let mut shotgun_count = 0;
@@ -78,11 +77,6 @@ fn main() {
 				if let Some(last) = last_data {
 					let curr_gems_lost = data.gems_despawned + data.gems_eaten;
 					let last_gems_lost = last.gems_despawned + last.gems_eaten;
-					if restart_eligible && data.status() == GameStatus::Playing && last.status() == GameStatus::Playing && data.time < 2. && last.time > 5. {
-						log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
-						giga_info(&mut connection);
-					}
-					restart_eligible = data.status() == GameStatus::Playing && data.time > 3.;
 					if (data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game started (at {:.0})", data.starting_time));
 					}
@@ -90,33 +84,39 @@ fn main() {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
 						giga_info(&mut connection);
 					}
-					if curr_gems_lost > last_gems_lost {
-						log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
-						sl.play(&wav);
-					}
-					if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
-						sl.play(&wav2);
-						// play audio clip "start clearing arena"
-						// etc do the rest of the important times too
-					}
-					if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
-						//sl.play(&wav3);
-					}
-					if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected != gems_spawned(&data) && last_gems_lost + last.gems_collected == gems_spawned(&last) {
-						//sl.play(&wav4);
-						// need something better here, like a long sound that can be stopped when they're collected
-					}
-					if last.daggers_fired + 10 <= data.daggers_fired {
-						let frames_since_last = ((data.time - last_shotgun_time) * 60.).round() as usize - 20;
-						if frames_since_last < shotguns.len() {
-							//sl.play(&shotguns[frames_since_last]);
+					if data.status() == GameStatus::Playing {
+						if last.status() == GameStatus::Playing && data.time < 2. && last.time > 5. {
+							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
+							giga_info(&mut connection);
 						}
-						if frames_since_last < 20 {
-							shotgun_sum += frames_since_last;
-							shotgun_count += 1;
-							shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+						if curr_gems_lost > last_gems_lost {
+							log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
+							sl.play(&wav);
 						}
-						last_shotgun_time = data.time;
+						if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
+							sl.play(&wav2);
+							// play audio clip "start clearing arena"
+							// etc do the rest of the important times too
+						}
+						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
+							//sl.play(&wav3);
+						}
+						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected != gems_spawned(&data) && last_gems_lost + last.gems_collected == gems_spawned(&last) {
+							//sl.play(&wav4);
+							// need something better here, like a long sound that can be stopped when they're collected
+						}
+						if last.daggers_fired + 10 <= data.daggers_fired {
+							let frames_since_last = ((data.time - last_shotgun_time) * 60.).round() as usize - 20;
+							if frames_since_last < shotguns.len() {
+								//sl.play(&shotguns[frames_since_last]);
+							}
+							if frames_since_last < 20 {
+								shotgun_sum += frames_since_last;
+								shotgun_count += 1;
+								shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+							}
+							last_shotgun_time = data.time;
+						}
 					}
 				}
 				last_data = Some(data);
