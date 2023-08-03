@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 ddcore-rs = { version = "0.3.0", features = ["memory"] }
 soloud = "1"
+
+[patch.crates-io]
+ddcore-rs = {path = "E:\\code\\ddcore-rs" }
