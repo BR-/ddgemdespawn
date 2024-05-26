@@ -38,6 +38,13 @@ fn main() {
 	wav3.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\Microwave.mp3"#)).unwrap();
 	let mut wav4 = audio::Wav::default();
 	wav4.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\evaworciM.mp3"#)).unwrap();
+	let mut use_homing = audio::Wav::default();
+	//use_homing.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\homing.mp3"#)).unwrap();
+	use_homing.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boing.mp3"#)).unwrap();
+	let mut boowomp = audio::Wav::default();
+	boowomp.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boowomp.mp3"#)).unwrap();
+	let mut facepalm = audio::Wav::default();
+	facepalm.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\facepalm.mp3"#)).unwrap();
 	let mut shotguns = vec![];
 	for i in 1..=5 {
 		let mut shotgun = audio::Wav::default();
@@ -83,20 +90,30 @@ fn main() {
 					if (last.status() == GameStatus::Playing || last.status() == GameStatus::OwnReplayFromLastRun || last.status() == GameStatus::OwnReplayFromLeaderboard || last.status() == GameStatus::OtherReplay || last.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
 						giga_info(&mut connection);
+						sl.play(&boowomp);
 					}
-					if data.status() == GameStatus::Playing {
-						if last.status() == GameStatus::Playing && data.time < 2. && last.time > 5. {
+					if data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay {
+						if last.status() == GameStatus::Playing && data.time < data.starting_time + 2. && last.time > last.starting_time + 5. {
 							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
 							giga_info(&mut connection);
+							sl.play(&facepalm);
 						}
 						if curr_gems_lost > last_gems_lost {
 							log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
-							sl.play(&wav);
+							if !(data.starting_time < 300. && data.time > 700.) {
+								sl.play(&wav);
+							}
 						}
 						if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
 							sl.play(&wav2);
 							// play audio clip "start clearing arena"
 							// etc do the rest of the important times too
+						}
+						for i in [716., 748., 778., 806., 832., 857., 880., 903., 924., 944., 964., 982., 1000., 1017., 1034., 1050., 1065., 1080., 1095., 1109., 1122., 1135., 1148., 1161.] {
+							// https://discord.com/channels/399568958669455364/611994324300726281/1137206936685785180
+							if data.starting_time + data.time > i && data.starting_time + last.time <= i {
+								sl.play(&use_homing);
+							}
 						}
 						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
 							//sl.play(&wav3);
