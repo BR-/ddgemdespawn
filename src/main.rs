@@ -90,22 +90,26 @@ fn main() {
 					if (last.status() == GameStatus::Playing || last.status() == GameStatus::OwnReplayFromLastRun || last.status() == GameStatus::OwnReplayFromLeaderboard || last.status() == GameStatus::OtherReplay || last.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
 						giga_info(&mut connection);
-						sl.play(&boowomp);
+						//sl.play(&boowomp);
 					}
 					if data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay {
 						if last.status() == GameStatus::Playing && data.time < data.starting_time + 2. && last.time > last.starting_time + 5. {
 							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
 							giga_info(&mut connection);
-							sl.play(&facepalm);
+							//sl.play(&facepalm);
 						}
 						if curr_gems_lost > last_gems_lost {
-							log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
-							if !(data.starting_time < 300. && data.time > 700.) {
-								sl.play(&wav);
+							if data.time > last.time && data.time - last.time < 0.1 {
+								log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
+								if !(data.starting_time < 300. && data.time > 700.) {
+									sl.play(&wav);
+								}
+							} else {
+								log(&mut logfile, format!("Gem lost at {:.4} (skipping sound)", data.starting_time + data.time));
 							}
 						}
 						if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
-							sl.play(&wav2);
+							// sl.play(&wav2);
 							// play audio clip "start clearing arena"
 							// etc do the rest of the important times too
 						}
