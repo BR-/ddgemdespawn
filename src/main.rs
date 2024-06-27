@@ -32,52 +32,47 @@ fn main() {
 	let mut speech = audio::Speech::default();
 	speech.set_text("gem lost").unwrap();
 	let mut wav = audio::Wav::default();
-	wav.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\metal-pipe-falling-sound-effect-By-Tuna.mp3"#)).unwrap();
+	wav.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/metal-pipe-falling-sound-effect-By-Tuna.mp3"#))).unwrap();
 	let mut wav2 = audio::Wav::default();
-	wav2.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\burp_x.wav"#)).unwrap();
+	wav2.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/burp_x.wav"#))).unwrap();
 	let mut wav3 = audio::Wav::default();
-	wav3.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\Microwave.mp3"#)).unwrap();
+	wav3.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/Microwave.mp3"#))).unwrap();
 	let mut wav4 = audio::Wav::default();
-	wav4.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\evaworciM.mp3"#)).unwrap();
+	wav4.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/evaworciM.mp3"#))).unwrap();
 	let mut use_homing = audio::Wav::default();
-	//use_homing.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\homing.mp3"#)).unwrap();
-	use_homing.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boing.mp3"#)).unwrap();
+	//use_homing.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/homing.mp3"#))).unwrap();
+	use_homing.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/boing.mp3"#))).unwrap();
 	let mut boowomp = audio::Wav::default();
-	boowomp.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boowomp.mp3"#)).unwrap();
+	boowomp.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/boowomp.mp3"#))).unwrap();
 	let mut facepalm = audio::Wav::default();
-	facepalm.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\facepalm.mp3"#)).unwrap();
+	facepalm.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/facepalm.mp3"#))).unwrap();
 	let mut shotguns = vec![];
-	//for i in 1..=5 {
-	//	let mut shotgun = audio::Wav::default();
-	//	shotgun.load_mem(include_bytes!(&format!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun{}.wav"#, i))).unwrap();
-	//	shotguns.push(shotgun);
-	//}
 	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun1.wav"#)).unwrap();
+		shotgun.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/shotgun1.wav"#))).unwrap();
 		shotguns.push(shotgun);
 	}
 	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun2.wav"#)).unwrap();
+		shotgun.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/shotgun2.wav"#))).unwrap();
 		shotguns.push(shotgun);
 	}
 	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun3.wav"#)).unwrap();
+		shotgun.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/shotgun3.wav"#))).unwrap();
 		shotguns.push(shotgun);
 	}
 	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun4.wav"#)).unwrap();
+		shotgun.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/shotgun4.wav"#))).unwrap();
 		shotguns.push(shotgun);
 	}
 	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun5.wav"#)).unwrap();
+		shotgun.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/shotgun5.wav"#))).unwrap();
 		shotguns.push(shotgun);
 	}
-	let mut logfile = None; //OpenOptions::new().create(true).write(true).append(true).open(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\despawns.log"#).ok();
+	let mut logfile = None; //OpenOptions::new().create(true).write(true).append(true).open(r#"despawns.log"#).ok();
 	loop {
 		let mut connection = loop {
 			let res = GameConnection::try_create(ConnectionParams {
