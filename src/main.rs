@@ -3,6 +3,7 @@
 use ddcore_rs::memory::{GameConnection, ConnectionParams, OperatingSystem, MemoryOverride};
 use ddcore_rs::models::{GameStatus, StatsDataBlock, replay::{DdRpl, EntityType, ReplayEvent::EnemyHitWeakSpot}};
 use soloud::*;
+#[allow(unused_imports)]
 use std::fs::{File, OpenOptions};
 #[allow(unused_imports)]
 use std::io::{Cursor, Write};
@@ -31,27 +32,52 @@ fn main() {
 	let mut speech = audio::Speech::default();
 	speech.set_text("gem lost").unwrap();
 	let mut wav = audio::Wav::default();
-	wav.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\metal-pipe-falling-sound-effect-By-Tuna.mp3"#)).unwrap();
+	wav.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\metal-pipe-falling-sound-effect-By-Tuna.mp3"#)).unwrap();
 	let mut wav2 = audio::Wav::default();
-	wav2.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\burp_x.wav"#)).unwrap();
+	wav2.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\burp_x.wav"#)).unwrap();
 	let mut wav3 = audio::Wav::default();
-	wav3.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\Microwave.mp3"#)).unwrap();
+	wav3.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\Microwave.mp3"#)).unwrap();
 	let mut wav4 = audio::Wav::default();
-	wav4.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\evaworciM.mp3"#)).unwrap();
+	wav4.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\evaworciM.mp3"#)).unwrap();
 	let mut use_homing = audio::Wav::default();
-	//use_homing.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\homing.mp3"#)).unwrap();
-	use_homing.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boing.mp3"#)).unwrap();
+	//use_homing.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\homing.mp3"#)).unwrap();
+	use_homing.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boing.mp3"#)).unwrap();
 	let mut boowomp = audio::Wav::default();
-	boowomp.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boowomp.mp3"#)).unwrap();
+	boowomp.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\boowomp.mp3"#)).unwrap();
 	let mut facepalm = audio::Wav::default();
-	facepalm.load(&std::path::Path::new(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\facepalm.mp3"#)).unwrap();
+	facepalm.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\facepalm.mp3"#)).unwrap();
 	let mut shotguns = vec![];
-	for i in 1..=5 {
+	//for i in 1..=5 {
+	//	let mut shotgun = audio::Wav::default();
+	//	shotgun.load_mem(include_bytes!(&format!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun{}.wav"#, i))).unwrap();
+	//	shotguns.push(shotgun);
+	//}
+	{
 		let mut shotgun = audio::Wav::default();
-		shotgun.load(&std::path::Path::new(&format!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun{}.wav"#, i))).unwrap();
+		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun1.wav"#)).unwrap();
 		shotguns.push(shotgun);
 	}
-	let mut logfile = OpenOptions::new().create(true).write(true).append(true).open(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\despawns.log"#).unwrap();
+	{
+		let mut shotgun = audio::Wav::default();
+		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun2.wav"#)).unwrap();
+		shotguns.push(shotgun);
+	}
+	{
+		let mut shotgun = audio::Wav::default();
+		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun3.wav"#)).unwrap();
+		shotguns.push(shotgun);
+	}
+	{
+		let mut shotgun = audio::Wav::default();
+		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun4.wav"#)).unwrap();
+		shotguns.push(shotgun);
+	}
+	{
+		let mut shotgun = audio::Wav::default();
+		shotgun.load_mem(include_bytes!(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\shotgun5.wav"#)).unwrap();
+		shotguns.push(shotgun);
+	}
+	let mut logfile = None; //OpenOptions::new().create(true).write(true).append(true).open(r#"C:\Users\Ben\Desktop\code\ddgemdespawn\despawns.log"#).ok();
 	loop {
 		let mut connection = loop {
 			let res = GameConnection::try_create(ConnectionParams {
@@ -168,7 +194,7 @@ fn regushes(data: &StatsDataBlock) -> i16 {
 }
 
 #[allow(unused_variables)]
-fn log<S: Into<String>>(file: &mut File, x: S) {
+fn log<S: Into<String>>(file: &mut Option<File>, x: S) {
 	let x: String = x.into();
 	println!("{}", x);
 	//writeln!(file, "{}", x).unwrap();
