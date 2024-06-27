@@ -148,14 +148,16 @@ fn main() {
 							// need something better here, like a long sound that can be stopped when they're collected
 						}
 						if last.daggers_fired + 10 <= data.daggers_fired {
-							let frames_since_last = ((data.time - last_shotgun_time) * 60.).round() as usize - 20;
-							if frames_since_last < shotguns.len() {
-								//sl.play(&shotguns[frames_since_last]);
-							}
-							if frames_since_last < 20 {
-								shotgun_sum += frames_since_last;
-								shotgun_count += 1;
-								shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+							if data.time > last_shotgun_time {
+								let frames_since_last = (((data.time - last_shotgun_time) * 60.).round() as usize).saturating_sub(20);
+								if frames_since_last < shotguns.len() {
+									//sl.play(&shotguns[frames_since_last]);
+								}
+								if frames_since_last < 20 {
+									shotgun_sum += frames_since_last;
+									shotgun_count += 1;
+									shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+								}
 							}
 							last_shotgun_time = data.time;
 						}
