@@ -27,6 +27,9 @@ const THORN: usize = 14;
 const GHOSTPEDE: usize = 15;
 const SPIDER_EGG: usize = 16;
 
+// is there really no way for the compiler to deduce the array size?
+const WAVES: [u32; 38] = [0, 259, 350, 397, 455, 507, 556, 601, 642, 679, 714, 746, 776, 804, 830, 855, 878, 901, 922, 942, 962, 981, 999, 1016, 1032, 1048, 1064, 1079, 1093, 1108, 1121, 1134, 1147, 1160, 1172, 1184, 1195, 9999];
+
 fn main() {
 	let sl = Soloud::default().unwrap();
 	let mut speech = audio::Speech::default();
@@ -96,6 +99,8 @@ fn main() {
 		let mut shotgun_sum = 0;
 		let mut shotgun_count = 0;
 		let mut shotgun_average = 0.;
+		let mut wave = 1;
+		let mut wave_gems_lost = 0;
 		loop {
 			if !connection.is_alive() {
 				break;
@@ -107,9 +112,13 @@ fn main() {
 					let last_gems_lost = last.gems_despawned + last.gems_eaten;
 					if (data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game started (at {:.0})", data.starting_time));
+						wave = 1;
+						wave_gems_lost = 0;
 					}
 					if (last.status() == GameStatus::Playing || last.status() == GameStatus::OwnReplayFromLastRun || last.status() == GameStatus::OwnReplayFromLeaderboard || last.status() == GameStatus::OtherReplay || last.status() == GameStatus::LocalReplay) && last.status() != data.status() {
 						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
+						let wave_start_time = WAVES[wave-1].max(data.starting_time as u32);
+						log(&mut logfile, format!("Gems lost during {}-{} = {}", wave_start_time, (data.starting_time + last.time) as u32, wave_gems_lost));
 						giga_info(&mut connection);
 						//sl.play(&boowomp);
 					}
@@ -117,14 +126,17 @@ fn main() {
 						if last.status() == GameStatus::Playing && data.time < data.starting_time + 2. && last.time > last.starting_time + 5. {
 							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
 							giga_info(&mut connection);
+							wave = 1;
+							wave_gems_lost = 0;
 							//sl.play(&facepalm);
 						}
 						if curr_gems_lost > last_gems_lost {
+							wave_gems_lost += curr_gems_lost - last_gems_lost;
 							if data.time > last.time && data.time - last.time < 0.1 {
 								log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
-								if !(data.starting_time < 300. && data.time > 700.) {
+								// if !(data.time > 350. && data.time < 405.) && !(data.starting_time < 300. && data.time > 660.) {
 									sl.play(&wav);
-								}
+								// }
 							} else {
 								log(&mut logfile, format!("Gem lost at {:.4} (skipping sound)", data.starting_time + data.time));
 							}
@@ -137,7 +149,7 @@ fn main() {
 						for i in [716., 748., 778., 806., 832., 857., 880., 903., 924., 944., 964., 982., 1000., 1017., 1034., 1050., 1065., 1080., 1095., 1109., 1122., 1135., 1148., 1161.] {
 							// https://discord.com/channels/399568958669455364/611994324300726281/1137206936685785180
 							if data.starting_time + data.time > i && data.starting_time + last.time <= i {
-								sl.play(&use_homing);
+								//sl.play(&use_homing);
 							}
 						}
 						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
@@ -160,6 +172,16 @@ fn main() {
 								}
 							}
 							last_shotgun_time = data.time;
+						}
+						if data.starting_time + data.time >= WAVES[wave] as f32 {
+							if data.starting_time + last.time < WAVES[wave] as f32 {
+								let wave_start_time = WAVES[wave].max(data.starting_time as u32);
+								log(&mut logfile, format!("Gems lost during {}-{} = {}", wave_start_time, WAVES[wave+1], wave_gems_lost));
+							}
+							wave_gems_lost = 0;
+							while data.starting_time + data.time >= WAVES[wave] as f32 {
+								wave += 1;
+							}
 						}
 					}
 				}
