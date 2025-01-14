@@ -49,6 +49,8 @@ fn main() {
 	boowomp.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/boowomp.mp3"#))).unwrap();
 	let mut facepalm = audio::Wav::default();
 	facepalm.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/facepalm.mp3"#))).unwrap();
+	let mut wav_eat = audio::Wav::default();
+	wav_eat.load_mem(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), r#"/Cartoon Munch Sound Effect [aiNg8ChsyUg].wav"#))).unwrap();
 	let mut shotguns = vec![];
 	{
 		let mut shotgun = audio::Wav::default();
@@ -101,6 +103,11 @@ fn main() {
 		let mut shotgun_average = 0.;
 		let mut wave = 1;
 		let mut wave_gems_lost = 0;
+		let mut wave_gems_eaten = 0;
+		let mut homing_used = 0;
+		let mut homing_start_time = -1.;
+		let mut homing_end_time = -1.;
+		let mut farm_end_data = None;
 		loop {
 			if !connection.is_alive() {
 				break;
@@ -108,79 +115,121 @@ fn main() {
 			if let Ok(data_frames) = connection.read_stats_block_with_frames() {
 				let data = data_frames.block;
 				if let Some(last) = last_data {
-					let curr_gems_lost = data.gems_despawned + data.gems_eaten;
-					let last_gems_lost = last.gems_despawned + last.gems_eaten;
+					let curr_gems_lost = data.gems_despawned;
+					let last_gems_lost = last.gems_despawned;
+					let curr_gems_eaten = data.gems_eaten;
+					let last_gems_eaten = last.gems_eaten;
 					if (data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay) && last.status() != data.status() {
+						log(&mut logfile, format!("\n\n\n\n"));
 						log(&mut logfile, format!("Game started (at {:.0})", data.starting_time));
 						wave = 1;
 						wave_gems_lost = 0;
+						farm_end_data = None;
 					}
 					if (last.status() == GameStatus::Playing || last.status() == GameStatus::OwnReplayFromLastRun || last.status() == GameStatus::OwnReplayFromLeaderboard || last.status() == GameStatus::OtherReplay || last.status() == GameStatus::LocalReplay) && last.status() != data.status() {
-						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average));
+						log(&mut logfile, format!("Game ended at {:.4} with {} gems lost and {} regushes. Shotgun avg {}", data.starting_time + last.time, last_gems_lost, regushes(&farm_end_data), shotgun_average));
 						let wave_start_time = WAVES[wave-1].max(data.starting_time as u32);
-						log(&mut logfile, format!("Gems lost during {}-{} = {}", wave_start_time, (data.starting_time + last.time) as u32, wave_gems_lost));
-						giga_info(&mut connection);
+						log(&mut logfile, format!("Gems lost during {}-{} = despawn:{} + eat:{} = {}", wave_start_time, (data.starting_time + last.time) as u32, wave_gems_lost, wave_gems_eaten, wave_gems_lost + wave_gems_eaten));
+						//giga_info(&mut connection);
 						//sl.play(&boowomp);
+						farm_end_data = None;
 					}
 					if data.status() == GameStatus::Playing || data.status() == GameStatus::OwnReplayFromLastRun || data.status() == GameStatus::OwnReplayFromLeaderboard || data.status() == GameStatus::OtherReplay || data.status() == GameStatus::LocalReplay {
 						if last.status() == GameStatus::Playing && data.time < data.starting_time + 2. && last.time > last.starting_time + 5. {
-							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&data), shotgun_average, data.starting_time));
-							giga_info(&mut connection);
+							log(&mut logfile, format!("\n\n\n\n"));
+							log(&mut logfile, format!("Game restarted at {:.4} with {} gems lost and {} regushes. Shotgun avg {} (new one starts at {:.0})", data.starting_time + last.time, last_gems_lost, regushes(&farm_end_data), shotgun_average, data.starting_time));
+							//giga_info(&mut connection);
 							wave = 1;
 							wave_gems_lost = 0;
 							//sl.play(&facepalm);
+							farm_end_data = None;
 						}
-						if curr_gems_lost > last_gems_lost {
-							wave_gems_lost += curr_gems_lost - last_gems_lost;
-							if data.time > last.time && data.time - last.time < 0.1 {
-								log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
-								// if !(data.time > 350. && data.time < 405.) && !(data.starting_time < 300. && data.time > 660.) {
-									sl.play(&wav);
-								// }
-							} else {
-								log(&mut logfile, format!("Gem lost at {:.4} (skipping sound)", data.starting_time + data.time));
-							}
-						}
-						if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
-							// sl.play(&wav2);
-							// play audio clip "start clearing arena"
-							// etc do the rest of the important times too
-						}
-						for i in [716., 748., 778., 806., 832., 857., 880., 903., 924., 944., 964., 982., 1000., 1017., 1034., 1050., 1065., 1080., 1095., 1109., 1122., 1135., 1148., 1161.] {
-							// https://discord.com/channels/399568958669455364/611994324300726281/1137206936685785180
-							if data.starting_time + data.time > i && data.starting_time + last.time <= i {
-								//sl.play(&use_homing);
-							}
-						}
-						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
-							//sl.play(&wav3);
-						}
-						if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected != gems_spawned(&data) && last_gems_lost + last.gems_collected == gems_spawned(&last) {
-							//sl.play(&wav4);
-							// need something better here, like a long sound that can be stopped when they're collected
-						}
-						if last.daggers_fired + 10 <= data.daggers_fired {
-							if data.time > last_shotgun_time {
-								let frames_since_last = (((data.time - last_shotgun_time) * 60.).round() as usize).saturating_sub(20);
-								if frames_since_last < shotguns.len() {
-									//sl.play(&shotguns[frames_since_last]);
-								}
-								if frames_since_last < 20 {
-									shotgun_sum += frames_since_last;
-									shotgun_count += 1;
-									shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+						if data.time > last.time {
+							if curr_gems_lost > last_gems_lost {
+								wave_gems_lost += curr_gems_lost - last_gems_lost;
+								if data.time > last.time && data.time - last.time < 0.1 {
+									log(&mut logfile, format!("Gem lost at {:.4}", data.starting_time + data.time));
+									// if !(data.time > 350. && data.time < 405.) && !(data.starting_time < 300. && data.time > 660.) {
+										sl.play(&wav);
+									// }
+								} else {
+									log(&mut logfile, format!("Gem lost at {:.4} (skipping sound)", data.starting_time + data.time));
 								}
 							}
-							last_shotgun_time = data.time;
-						}
-						if data.starting_time + data.time >= WAVES[wave] as f32 {
-							if data.starting_time + last.time < WAVES[wave] as f32 {
-								let wave_start_time = WAVES[wave].max(data.starting_time as u32);
-								log(&mut logfile, format!("Gems lost during {}-{} = {}", wave_start_time, WAVES[wave+1], wave_gems_lost));
+							if curr_gems_eaten > last_gems_eaten {
+								wave_gems_eaten += curr_gems_eaten - last_gems_eaten;
+								if data.time > last.time && data.time - last.time < 0.1 {
+									log(&mut logfile, format!("Gem eaten at {:.4}", data.starting_time + data.time));
+									// if !(data.time > 350. && data.time < 405.) && !(data.starting_time < 300. && data.time > 660.) {
+										sl.play(&wav_eat);
+									// }
+								} else {
+									log(&mut logfile, format!("Gem eaten at {:.4} (skipping sound)", data.starting_time + data.time));
+								}
 							}
-							wave_gems_lost = 0;
-							while data.starting_time + data.time >= WAVES[wave] as f32 {
-								wave += 1;
+							if data.starting_time + data.time > 80. && data.starting_time + last.time <= 80. {
+								// sl.play(&wav2);
+								// play audio clip "start clearing arena"
+								// etc do the rest of the important times too
+							}
+							for i in [716., 748., 778., 806., 832., 857., 880., 903., 924., 944., 964., 982., 1000., 1017., 1034., 1050., 1065., 1080., 1095., 1109., 1122., 1135., 1148., 1161.] {
+								// https://discord.com/channels/399568958669455364/611994324300726281/1137206936685785180
+								if data.starting_time + data.time > i && data.starting_time + last.time <= i {
+									// sl.play(&use_homing);
+								}
+							}
+							if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected == gems_spawned(&data) && last_gems_lost + last.gems_collected != gems_spawned(&last) {
+								// sl.play(&wav3);
+							}
+							if last_gems_lost == curr_gems_lost && curr_gems_lost + data.gems_collected != gems_spawned(&data) && last_gems_lost + last.gems_collected == gems_spawned(&last) {
+								// sl.play(&wav4);
+								// need something better here, like a long sound that can be stopped when they're collected
+							}
+							if last.daggers_fired + 10 <= data.daggers_fired {
+								if data.time > last_shotgun_time {
+									let frames_since_last = (((data.time - last_shotgun_time) * 60.).round() as usize).saturating_sub(20);
+									if frames_since_last < shotguns.len() {
+										// sl.play(&shotguns[frames_since_last]);
+									}
+									if frames_since_last < 20 {
+										shotgun_sum += frames_since_last;
+										shotgun_count += 1;
+										shotgun_average = (shotgun_sum as f32) / (shotgun_count as f32);
+									}
+								}
+								last_shotgun_time = data.time;
+							}
+							if data.starting_time + data.time >= WAVES[wave] as f32 {
+								if data.starting_time + last.time < WAVES[wave] as f32 {
+									let wave_start_time = WAVES[wave].max(data.starting_time as u32);
+									log(&mut logfile, format!("Gems lost during {}-{} = {}", wave_start_time, WAVES[wave+1], wave_gems_lost));
+								}
+								wave_gems_lost = 0;
+								while data.starting_time + data.time >= WAVES[wave] as f32 {
+									wave += 1;
+								}
+							}
+							if data.daggers_eaten > last.daggers_eaten {
+								log(&mut logfile, format!("Dagger eaten at {} (total {})", data.starting_time + data.time, data.daggers_eaten));
+							}
+							if data.time > 0.1 {
+								if last.homing > data.homing + 10 {
+									log(&mut logfile, format!("HSG at {}", data.starting_time + data.time));
+								} else if last.homing > data.homing {
+									homing_used += last.homing - data.homing;
+									if homing_start_time < 0. {
+										homing_start_time = data.starting_time + data.time;
+									}
+									homing_end_time = data.starting_time + data.time;
+								} else if homing_start_time >= 0. && data.starting_time + data.time > homing_end_time + 0.25 {
+									log(&mut logfile, format!("{} homing used during {}-{}", homing_used, homing_start_time, homing_end_time));
+									homing_used = 0;
+									homing_start_time = -1.;
+									homing_end_time = -1.;
+								}
+							}
+							if data.starting_time + data.time > 355. && last.starting_time + last.time <= 355. {
+								farm_end_data = Some(data.clone());
 							}
 						}
 					}
@@ -202,14 +251,18 @@ fn gems_spawned(data: &StatsDataBlock) -> i32 {
 	ret
 }
 
-fn regushes(data: &StatsDataBlock) -> i16 {
-	let sq1 = data.per_enemy_alive_count[SQUID_I]+data.per_enemy_kill_count[SQUID_I];
-	let sq2 = data.per_enemy_alive_count[SQUID_II]+data.per_enemy_kill_count[SQUID_II];
-	let sq3 = data.per_enemy_alive_count[SQUID_III]+data.per_enemy_kill_count[SQUID_III];
-	let sk2 = data.per_enemy_alive_count[SKULL_II]+data.per_enemy_kill_count[SKULL_II];
-	let sk3 = data.per_enemy_alive_count[SKULL_III]+data.per_enemy_kill_count[SKULL_III];
-	let sk4 = data.per_enemy_alive_count[SKULL_IV]+data.per_enemy_kill_count[SKULL_IV];
-	(sk2 + sk3 + sk4) - (sq1 + sq2 + sq3)
+fn regushes(data: &Option<StatsDataBlock>) -> String {
+	if let Some(data) = data {
+		let sq1 = data.per_enemy_alive_count[SQUID_I]+data.per_enemy_kill_count[SQUID_I];
+		let sq2 = data.per_enemy_alive_count[SQUID_II]+data.per_enemy_kill_count[SQUID_II];
+		let sq3 = data.per_enemy_alive_count[SQUID_III]+data.per_enemy_kill_count[SQUID_III];
+		let sk2 = data.per_enemy_alive_count[SKULL_II]+data.per_enemy_kill_count[SKULL_II];
+		let sk3 = data.per_enemy_alive_count[SKULL_III]+data.per_enemy_kill_count[SKULL_III];
+		let sk4 = data.per_enemy_alive_count[SKULL_IV]+data.per_enemy_kill_count[SKULL_IV];
+		format!("{}", (sk2 + sk3 + sk4) - (sq1 + sq2 + sq3))
+	} else {
+		"?".to_owned()
+	}
 }
 
 #[allow(unused_variables)]
